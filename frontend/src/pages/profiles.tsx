@@ -1,128 +1,148 @@
 // src/pages/Profile.tsx
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, ChangeEvent, FormEvent } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
-  getMyProfile,
-  updateMyProfile,
-  Profile as ProfileType,
-} from "../api/profile.api";
+  fetchProfile,
+  updateProfile,
+  createProfile,
+  clearProfile,
+} from "../redux/profileSlice";
+import { RootState, AppDispatch } from "../redux/store";
 
-export default function Profile() {
-  const [profile, setProfile] = useState<ProfileType | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [updating, setUpdating] = useState(false);
+const ProfilePage: React.FC = () => {
+  const dispatch = useDispatch<AppDispatch>();
+  const profileState = useSelector((state: RootState) => state.profile);
+  const { profile, loading, error } = profileState;
 
-  // Lấy profile khi component mount
+  const [avatar, setAvatar] = useState<File | null>(null);
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [city, setCity] = useState("");
+  const [country, setCountry] = useState("");
+
+  // Lấy user_id từ localStorage (hoặc từ auth slice)
+  const user_id = localStorage.getItem("user_id") || "";
+
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        setLoading(true);
-        const data = await getMyProfile();
-        setProfile(data);
-      } catch (err: any) {
-        setError(err.message || "Cannot fetch profile");
-      } finally {
-        setLoading(false);
-      }
+    if (user_id) {
+      dispatch(fetchProfile(user_id));
+    }
+
+    return () => {
+      dispatch(clearProfile());
     };
+  }, [dispatch, user_id]);
 
-    fetchProfile();
-  }, []);
+  useEffect(() => {
+    if (profile) {
+      setPhone(profile.phone_number || "");
+      setAddress(profile.address || "");
+      setCity(profile.city || "");
+      setCountry(profile.country || "");
+    }
+  }, [profile]);
 
-  // Xử lý update
-  const handleUpdate = async () => {
-    if (!profile) return;
-
-    try {
-      setUpdating(true);
-      const updated = await updateMyProfile({
-        full_name: profile.full_name,
-        phone: profile.phone,
-        address: profile.address,
-        gender: profile.gender,
-      });
-      setProfile(updated.profile);
-      alert("Profile updated successfully!");
-    } catch (err: any) {
-      alert(err.message || "Update failed");
-    } finally {
-      setUpdating(false);
+  const handleAvatarChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setAvatar(e.target.files[0]);
     }
   };
 
-  if (loading)
-    return <div className="text-center mt-10">Loading profile...</div>;
-  if (error)
-    return <div className="text-red-600 text-center mt-10">{error}</div>;
-  if (!profile)
-    return <div className="text-center mt-10">No profile found</div>;
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!user_id) return;
+
+    const formData = new FormData();
+    if (avatar) formData.append("avatar", avatar);
+    formData.append("phone_number", phone);
+    formData.append("address", address);
+    formData.append("city", city);
+    formData.append("country", country);
+
+    try {
+      if (profile) {
+        await dispatch(updateProfile({ user_id, data: formData })).unwrap();
+        alert("Profile updated successfully!");
+      } else {
+        await dispatch(createProfile(formData)).unwrap();
+        alert("Profile created successfully!");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save profile.");
+    }
+  };
 
   return (
-    <div className="max-w-md mx-auto p-6 bg-white shadow rounded mt-10">
-      <h1 className="text-2xl font-bold mb-6 text-center">My Profile</h1>
+    <div className="max-w-md mx-auto p-4">
+      <h2 className="text-2xl font-bold mb-4">My Profile</h2>
 
-      {/* Full Name */}
-      <div className="mb-4">
-        <label className="block mb-1 font-semibold">Full Name:</label>
-        <input
-          type="text"
-          value={profile.full_name}
-          onChange={(e) =>
-            setProfile({ ...profile, full_name: e.target.value })
-          }
-          className="border border-gray-300 rounded px-3 py-2 w-full"
-        />
-      </div>
+      {loading && <p>Loading...</p>}
+      {error && <p className="text-red-500">{error}</p>}
 
-      {/* Phone */}
-      <div className="mb-4">
-        <label className="block mb-1 font-semibold">Phone:</label>
-        <input
-          type="text"
-          value={profile.phone}
-          onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-          className="border border-gray-300 rounded px-3 py-2 w-full"
-        />
-      </div>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block mb-1">Avatar:</label>
+          {profile?.avatar_url && (
+            <img
+              src={profile.avatar_url}
+              alt="avatar"
+              className="w-24 h-24 object-cover rounded-full mb-2"
+            />
+          )}
+          <input type="file" accept="image/*" onChange={handleAvatarChange} />
+        </div>
 
-      {/* Address */}
-      <div className="mb-4">
-        <label className="block mb-1 font-semibold">Address:</label>
-        <input
-          type="text"
-          value={profile.address}
-          onChange={(e) => setProfile({ ...profile, address: e.target.value })}
-          className="border border-gray-300 rounded px-3 py-2 w-full"
-        />
-      </div>
+        <div>
+          <label className="block mb-1">Phone Number:</label>
+          <input
+            type="text"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            className="w-full border rounded px-2 py-1"
+          />
+        </div>
 
-      {/* Gender */}
-      <div className="mb-6">
-        <label className="block mb-1 font-semibold">Gender:</label>
-        <select
-          value={profile.gender}
-          onChange={(e) =>
-            setProfile({
-              ...profile,
-              gender: e.target.value as ProfileType["gender"],
-            })
-          }
-          className="border border-gray-300 rounded px-3 py-2 w-full"
+        <div>
+          <label className="block mb-1">Address:</label>
+          <input
+            type="text"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            className="w-full border rounded px-2 py-1"
+          />
+        </div>
+
+        <div>
+          <label className="block mb-1">City:</label>
+          <input
+            type="text"
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+            className="w-full border rounded px-2 py-1"
+          />
+        </div>
+
+        <div>
+          <label className="block mb-1">Country:</label>
+          <input
+            type="text"
+            value={country}
+            onChange={(e) => setCountry(e.target.value)}
+            className="w-full border rounded px-2 py-1"
+          />
+        </div>
+
+        <button
+          type="submit"
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          disabled={loading}
         >
-          <option value="male">Male</option>
-          <option value="female">Female</option>
-          <option value="other">Other</option>
-        </select>
-      </div>
-
-      {/* Update button */}
-      <button
-        onClick={handleUpdate}
-        disabled={updating}
-        className="w-full bg-yellow-600 text-white py-2 rounded hover:bg-yellow-500 transition"
-      >
-        {updating ? "Updating..." : "Save Changes"}
-      </button>
+          {profile ? "Update Profile" : "Create Profile"}
+        </button>
+      </form>
     </div>
   );
-}
+};
+
+export default ProfilePage;

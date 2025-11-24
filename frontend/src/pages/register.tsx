@@ -3,9 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { register } from "../api/auth.api";
 
 const Register: React.FC = () => {
+  const [show, setShow] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState(""); // ✅ mật khẩu xác nhận
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
@@ -16,6 +18,13 @@ const Register: React.FC = () => {
     e.preventDefault();
     setError("");
     setSuccess("");
+
+    // Kiểm tra mật khẩu và confirmPassword
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await register(name, email, password);
@@ -77,14 +86,67 @@ const Register: React.FC = () => {
             />
           </div>
 
-          <div>
+          <div className="max-w-sm">
             <label className="block mb-1 font-medium text-gray-700">
               Password
             </label>
+
+            <div className="relative">
+              <input
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                type={show ? "text" : "password"}
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                placeholder="Enter password"
+              />
+
+              <button
+                type="button"
+                onClick={() => setShow(!show)}
+                className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 
+            dark:text-neutral-500 hover:text-blue-500"
+              >
+                {/* Icon hiện password */}
+                {show ? (
+                  <svg
+                    className="size-5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12Z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                ) : (
+                  // Icon ẩn password
+                  <svg
+                    className="size-5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+                    <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+                    <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+                    <line x1="2" y1="2" x2="22" y2="22" />
+                  </svg>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Confirm Password */}
+          <div>
+            <label className="block mb-1 font-medium text-gray-700">
+              Confirm Password
+            </label>
             <input
               type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
               required
               className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"
             />

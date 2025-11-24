@@ -2,7 +2,7 @@ import { DataTypes } from "sequelize";
 import sequelize from "../config/database.js";
 import { v4 as uuidv4 } from "uuid";
 
-const Oder = sequelize.define(
+const Order = sequelize.define(
     "orders",
     {
         id: {
@@ -32,4 +32,5 @@ const Oder = sequelize.define(
         timestamps: false,
     }
 );
-export default Oder;
+
+export default Order;

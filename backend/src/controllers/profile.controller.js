@@ -1,40 +1,54 @@
-import {
-    getProfileByUserId,
-    createEmptyProfile,
-    updateProfile
-} from "../services/profile.service.js";
+// controllers/profile.controller.js
+import Profile from "../models/profile.model.js";
+import User from "../models/user.model.js";
 
-export const getMyProfile = async (req, res) => {
+// ====================
+// Tạo profile
+// ====================
+export const createProfile = async (req, res) => {
     try {
-        // Lấy ID từ token, KHÔNG lấy từ query
-        const userId = req.user.id;
+        const { user_id, phone_number, address, city, country } = req.body;
+        const avatar_url = req.file ? `/uploads/avatars/${req.file.filename}` : null;
 
-        let profile = await getProfileByUserId(userId);
-        if (!profile) profile = await createEmptyProfile(userId);
+        const user = await User.findByPk(user_id);
+        if (!user) return res.status(404).json({ message: "User không tồn tại" });
 
-        res.json(profile);
-    } catch (err) {
-        console.error("getMyProfile error:", err);
-        res.status(500).json({ message: err.message });
-    }
-};
+        const existingProfile = await Profile.findOne({ where: { user_id } });
+        if (existingProfile)
+            return res.status(400).json({ message: "Profile đã tồn tại" });
 
-export const updateMyProfile = async (req, res) => {
-    try {
-        const userId = req.user.id;
-
-        const { full_name, phone, address, gender } = req.body;
-
-        const updated = await updateProfile(userId, {
-            full_name,
-            phone,
-            address,
-            gender
+        const profile = await Profile.create({
+            user_id,
+            phone_number: phone_number || "",
+            address: address || "",
+            city: city || "",
+            country: country || "Vietnam",
+            avatar_url,
         });
 
-        res.json({ message: "Profile updated", profile: updated });
+        res.status(201).json(profile);
     } catch (err) {
-        console.error("updateMyProfile error:", err);
+        console.error("createProfile error:", err);
         res.status(500).json({ message: err.message });
     }
 };
+
+// ====================
+// Lấy profile theo user_id
+// ====================
+export const getProfile = async (req, res) => { /* ... */ };
+
+// ====================
+// Cập nhật profile theo user_id
+// ====================
+export const updateProfile = async (req, res) => { /* ... */ };
+
+// ====================
+// Lấy profile của user đang login
+// ====================
+export const getMyProfile = async (req, res) => { /* ... */ };
+
+// ====================
+// Cập nhật profile của user đang login
+// ====================
+export const updateMyProfile = async (req, res) => { /* ... */ };

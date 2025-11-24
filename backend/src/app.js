@@ -8,6 +8,7 @@ import cartRouter from "./routes/cart.router.js";
 import profileRouter from "./routes/profile.routes.js";
 import path from "path";
 import { fileURLToPath } from "url";
+import orderRouter from "./routes/order.routes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,7 +24,8 @@ app.use("/api/auth", authRouter);
 app.use("/api/products", watchRouter);
 app.use("/api/categories", categoryRouter);
 app.use("/api/cart", cartRouter);
-app.use("/api/profile", profileRouter); // ✔ FIXED
+app.use("/api/profile", profileRouter);
+app.use("/api/orders", orderRouter);
 
 app.get("/", (req, res) => {
     res.send("API hoạt động bình thường");

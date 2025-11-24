@@ -1,53 +1,58 @@
+// src/api/profile.api.ts
 import axios from "axios";
 
-const API_URL = "http://localhost:5000/api/profile";
+const API_URL = "http://localhost:5000/api"; // base URL backend
 
 // ---------------- TYPES ----------------
 export interface Profile {
   id: string;
   user_id: string;
-  full_name: string;
-  email?: string;
-  phone: string;
-  address: string;
-  gender: "male" | "female" | "other";
+  avatar_url?: string | null;
+  phone_number?: string;
+  address?: string;
+  city?: string;
+  country?: string;
+  created_at?: string;
 }
 
-export interface ProfileResponse extends Profile {}
-export interface UpdateProfileResponse {
-  message: string;
-  profile: Profile;
-}
-
-// ---------------- GET MY PROFILE ----------------
-export const getMyProfile = async (): Promise<ProfileResponse> => {
+// ---------------- GET PROFILE ----------------
+export const getProfile = async (user_id: string): Promise<Profile> => {
   const token = localStorage.getItem("token");
-  if (!token) throw new Error("No token found, please login");
+  if (!token) throw new Error("No token found");
 
-  const res = await axios.get(`${API_URL}/me`, {
+  const res = await axios.get(`${API_URL}/profiles/${user_id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+};
+
+// ---------------- CREATE PROFILE ----------------
+export const createProfile = async (formData: FormData): Promise<Profile> => {
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("No token found");
+
+  const res = await axios.post(`${API_URL}/profiles`, formData, {
     headers: {
       Authorization: `Bearer ${token}`,
+      "Content-Type": "multipart/form-data",
     },
   });
-
-  return res.data; // backend trả thẳng profile object
+  return res.data;
 };
 
 // ---------------- UPDATE PROFILE ----------------
-export const updateMyProfile = async (data: {
-  full_name?: string;
-  phone?: string;
-  address?: string;
-  gender?: "male" | "female" | "other";
-}): Promise<UpdateProfileResponse> => {
+export const updateProfile = async (
+  user_id: string,
+  formData: FormData
+): Promise<Profile> => {
   const token = localStorage.getItem("token");
-  if (!token) throw new Error("No token found, please login");
+  if (!token) throw new Error("No token found");
 
-  const res = await axios.put(`${API_URL}/update`, data, {
+  const res = await axios.put(`${API_URL}/profiles/${user_id}`, formData, {
     headers: {
       Authorization: `Bearer ${token}`,
+      "Content-Type": "multipart/form-data",
     },
   });
-
   return res.data;
 };
