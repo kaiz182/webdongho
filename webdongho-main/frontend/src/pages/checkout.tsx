@@ -33,6 +33,13 @@ const Checkout: React.FC = () => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  // Tính tổng có chống NaN
+  const totalAmount = items.reduce((sum, i) => {
+    const price = Number(i.price) || 0;
+    const quantity = Number(i.quantity) || 0;
+    return sum + price * quantity;
+  }, 0);
+
   const handleOrder = async () => {
     if (!form.fullname || !form.phone || !form.address) {
       toast.error("Please fill all fields");
@@ -41,26 +48,29 @@ const Checkout: React.FC = () => {
 
     const token = localStorage.getItem("token");
     if (!token) {
-      toast.error("You must be logged in to checkout");
+      toast.error("You must be logged in");
       navigate("/login");
       return;
     }
 
     setLoading(true);
+
     try {
+      // Chuẩn dữ liệu gửi lên backend
       const orderItems = items.map((i) => ({
-        product_id: i.id,
+        product_id: i.id, // ✔ đúng
         quantity: i.quantity,
         price: i.price,
       }));
 
-      await createOrder(orderItems, token);
+      await createOrder(orderItems, token, form);
+
       dispatch(clearCart());
       toast.success("Order placed successfully!");
 
       setTimeout(() => navigate("/"), 1000);
     } catch (err: any) {
-      toast.error(err.response?.data?.message || err.message);
+      toast.error(err.response?.data?.message || "Failed to place order");
     } finally {
       setLoading(false);
     }
@@ -81,6 +91,7 @@ const Checkout: React.FC = () => {
             onChange={handleChange}
             className="w-full border p-3 rounded"
           />
+
           <input
             type="text"
             name="phone"
@@ -89,6 +100,7 @@ const Checkout: React.FC = () => {
             onChange={handleChange}
             className="w-full border p-3 rounded"
           />
+
           <input
             type="text"
             name="address"
@@ -100,9 +112,10 @@ const Checkout: React.FC = () => {
 
           <p className="text-lg font-semibold mt-4">
             Total:{" "}
-            {items
-              .reduce((sum, i) => sum + i.price * i.quantity, 0)
-              .toLocaleString("en-US", { style: "currency", currency: "USD" })}
+            {totalAmount.toLocaleString("en-US", {
+              style: "currency",
+              currency: "USD",
+            })}
           </p>
 
           <button
